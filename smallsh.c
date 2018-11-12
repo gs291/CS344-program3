@@ -5,16 +5,20 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+int max_num_arg =0;
 int exit_shell = 0;
 int last_exit_status = 0;
 
-void cleanUpProgram() {
+void cleanUpProgram(char *args[], int numArgs) {
+  for(int i = 0; i < max_num_arg; i++) {
+    free(args[i]);
+  }
   exit_shell = 1;
 }
 
-int checkBuiltIn (char *cmd, char args[][128], int numArgs) {
+int checkBuiltIn (char *cmd, char *args[], int numArgs) {
   if(strstr(cmd, "exit") != NULL && (int)(strstr(cmd, "exit") - cmd) == 0) {
-    cleanUpProgram();
+    cleanUpProgram(args, numArgs);
     return 1;
   }
   else if (strstr(cmd, "cd") != NULL && (int)(strstr(cmd, "cd") - cmd) == 0) {
@@ -41,32 +45,53 @@ void clearTrailingChars(char *str) {
   if(p != NULL){ *p=0; }
 }
 
-int getArgs(char *cmd, char args[][128]) {
+int getArgs(char *cmd, char *args[]) {
+  char tempString[128];
   char *remainingArgs;
-  int indexStart = 0, indexEnd = 0, numArgs = 0;
-  
-  remainingArgs = strchr(cmd, ' ');
+  int numArgs = 0;
+  int indexStart = 0, indexEnd =  0, init = 0;
 
-  while(remainingArgs != NULL) {
-    indexStart = (int)(remainingArgs-cmd);
-    remainingArgs = strchr(remainingArgs+1, ' ');
+  remainingArgs = strchr(cmd, ' ');
+  do {
+    memset(tempString , '\0', sizeof(tempString));
+    if(init != 0) {
+      indexStart = (int)(remainingArgs-cmd) + 1;
+      remainingArgs = strchr(remainingArgs+1, ' ');
+    }
 
     if(remainingArgs == NULL) { indexEnd = (int)(strchr(cmd, '\0')- cmd);  }
     else { indexEnd = (int)(remainingArgs-cmd); }
 
-    if(indexStart+1 != indexEnd) {
-      for(int j = 0; indexStart+1 < indexEnd; j++) {
-        args[numArgs][j] = cmd[indexStart+1];
-        indexStart++;
-      }
-      numArgs++;
+    for(int j = 0; indexStart < indexEnd; j++) {
+      tempString[j] = cmd[indexStart];
+      indexStart++;
     }
-  }
+
+    if(indexStart == indexEnd || init == 0) {
+      if(tempString[0] != '\0') {
+        args[numArgs] = (char *) malloc(sizeof(tempString)+1);
+        strcpy(args[numArgs], tempString);
+        numArgs++;
+        init=1;
+      }
+    }
+  } while (remainingArgs != NULL);
+
+for(int k = numArgs - numArgs; k < numArgs; k++) {
+  printf("ARG[%d]: %s\n", k, args[k]);
 }
+  if(max_num_arg < numArgs) {
+    max_num_arg = numArgs;
+  }
+  return numArgs;
+}
+
+
 
 void runShell () {
   int numArgs = 0;
-  char command[2048], arguments[512][128];
+  char command[2048];
+  char *arguments[512];
 
   while(exit_shell != 1) {
     memset(command, '\0', sizeof(command));
@@ -76,11 +101,11 @@ void runShell () {
     fgets(command, sizeof(command), stdin);
 
     clearTrailingChars(command);
-    printf("%s\n", command);
     numArgs = getArgs(command, arguments);
 
+
     if (checkBuiltIn(command, arguments, numArgs) != 1) {
-        printf("NOT BUILT IN COMMAND\n");
+        execvp(arguments[0], arguments);
     }
   }
 
