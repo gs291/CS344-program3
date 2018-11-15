@@ -54,10 +54,10 @@ int checkBuiltIn (char *cmd, char *args[], int *argLoc) {
   }
   else if (strstr(cmd, "status") != NULL && (int)(strstr(cmd, "status") - cmd) == 0) { /*If status was the command */
     if(sign != 0) { /*If the last exit was due to a signal termiantion */
-      printf("terminated by signal %d\n", sign);
+      printf("terminated by signal %d", sign);
       fflush(stdout);
     } else {
-      printf("exit value %d\n", last_exit_status);
+      printf("exit value %d", last_exit_status);
       fflush(stdout);
     }
     return 1;
@@ -115,8 +115,8 @@ int * getArgs(char *cmd, char *args[]) {
           argLoc[1] = argLoc[0];
         } else if (strcmp(tempString, ">") == 0) {
           argLoc[2] = argLoc[0];
-        } else if (strcmp(tempString, "$$") == 0) {
-          sprintf(tempString, "%ld", (long)getpid());
+        } else if (strstr(tempString, "$$") != NULL) {
+          sprintf(strstr(tempString, "$$"), "%ld", (long)getpid());
         }
         /*Allocate memeory in an array of strings such so the new parssed command/argrument gets placed into it*/
         args[argLoc[0]] = (char *) malloc(sizeof(tempString)+1);
@@ -203,8 +203,13 @@ void removeBGTasks() {
   for(i = num_back_PID - 1; i >= 0; i--) {
       pid_t bg = waitpid(-1, &status, WNOHANG);
       if (bg != 0 && bg != -1) {
-        printf("background pid %d is done: exit value %d\n", bg, status);
-        fflush(stdout);
+        if(status == 15) {
+          printf("background pid %d is done: terminated by signal %d\n", bg, status);
+          fflush(stdout);
+        } else {
+          printf("background pid %d is done: exit value %d\n", bg, status);
+          fflush(stdout);
+      }
         background_PID[i] = 0;
         num_back_PID--;
         last_exit_status = status;
