@@ -54,10 +54,10 @@ int checkBuiltIn (char *cmd, char *args[], int *argLoc) {
   }
   else if (strstr(cmd, "status") != NULL && (int)(strstr(cmd, "status") - cmd) == 0) { /*If status was the command */
     if(sign != 0) { /*If the last exit was due to a signal termiantion */
-      printf("terminated by signal %d", sign);
+      printf("terminated by signal %d\n", sign);
       fflush(stdout);
     } else {
-      printf("exit value %d", last_exit_status);
+      printf("exit value %d\n", last_exit_status);
       fflush(stdout);
     }
     return 1;
